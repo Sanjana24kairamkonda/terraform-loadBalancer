@@ -1,0 +1,49 @@
+name: Terraform Deployment
+
+on:
+  push:
+    branches:
+      - main  # Trigger on push to the 'main' branch
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout the code
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    # Step 2: Setup Terraform
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: latest
+
+    # Step 3: Decode and authenticate to Google Cloud using the service account key
+    - name: Authenticate to GCP
+      run: |
+        # Decode the Base64 service account key and save it as gcp-key.json
+        echo "${{ secrets.GCP_SA_KEY }}" | base64 --decode > gcp-key.json
+        # Set GOOGLE_APPLICATION_CREDENTIALS to the service account key file
+        echo "GOOGLE_APPLICATION_CREDENTIALS=gcp-key.json" >> $GITHUB_ENV
+        # Authenticate using the decoded key
+        gcloud auth activate-service-account --key-file=gcp-key.json
+        # Set the project for gcloud
+        gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
+
+    # Step 4: Reinitialize Terraform
+    - name: Reinitialize Terraform
+      run: terraform init -reconfigure
+
+    # Step 5: Plan Terraform changes
+    - name: Plan Terraform
+      run: terraform plan -var-file=terraform.tfvars -out=tfplan
+
+    # Step 6: Apply Terraform changes
+    - name: Apply Terraform
+      run: terraform apply -auto-approve tfplan
+
+    # Optional: Clean up the service account key file
+    - name: Clean up
+      run: rm gcp-key.json
