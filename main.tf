@@ -63,10 +63,3 @@ resource "google_compute_global_address" "default" {
   name = "loadbalancer-ip"
 }
 
-# SSL Certificate (Optional)
-resource "google_compute_managed_ssl_certificate" "default" {
-  name = "ssl-certificate"
-  managed {
-    domains = ["sanjana.com"]
-  }
-}
