@@ -41,25 +41,36 @@ resource "google_compute_backend_service" "default" {
   }
 }
 
-# Create an HTTP(S) Load Balancer (Frontend)
+# Create an HTTPS Load Balancer (Frontend)
 resource "google_compute_url_map" "default" {
   name            = "url-map"
   default_service = google_compute_backend_service.default.self_link
 }
 
-resource "google_compute_target_http_proxy" "default" {
-  name    = "http-proxy"
-  url_map = google_compute_url_map.default.self_link
+# Create an HTTPS Proxy and link the SSL certificate
+resource "google_compute_target_https_proxy" "default" {
+  name             = "https-proxy"
+  url_map          = google_compute_url_map.default.self_link
+  ssl_certificates = [google_compute_managed_ssl_certificate.default.self_link]  # Add SSL certificate
 }
 
+# Create a global forwarding rule for HTTPS
 resource "google_compute_global_forwarding_rule" "default" {
-  name       = "http-forwarding-rule"
-  target     = google_compute_target_http_proxy.default.self_link
-  port_range = "80"
+  name       = "https-forwarding-rule"
+  target     = google_compute_target_https_proxy.default.self_link
+  port_range = "443"  # Use port 443 for HTTPS
   ip_address = google_compute_global_address.default.address
 }
 
+# Create a global IP address for the Load Balancer
 resource "google_compute_global_address" "default" {
   name = "loadbalancer-ip"
 }
 
+# SSL Certificate (Optional, use GCP managed certificate)
+resource "google_compute_managed_ssl_certificate" "default" {
+  name = "ssl-certificate"
+  managed {
+    domains = ["your-domain.com"]
+  }
+}
