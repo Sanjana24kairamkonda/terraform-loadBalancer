@@ -67,6 +67,6 @@ resource "google_compute_global_address" "default" {
 resource "google_compute_managed_ssl_certificate" "default" {
   name = "ssl-certificate"
   managed {
-    domains = ["your-domain.com"]
+    domains = ["sanjana.com"]
   }
 }
